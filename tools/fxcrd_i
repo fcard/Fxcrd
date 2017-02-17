@@ -1,0 +1,11 @@
+#!/bin/sh
+
+. "$(fxcrd_path)/init"
+
+__fxcrd_macro 'exit' -i 'kill -10 $$'
+__fxcrd_macro 'include' -e -i '__fxcrd_source "$fxcrd_path/include/$1"'
+__fxcrd_macro 'eval' -e -i 'eval $@'
+
+trap 'echo' 10
+
+__fxcrd_expand_macros -i "$$" 'FXCRD:' 

@@ -1,0 +1,37 @@
+#!/bin/sh
+
+
+export __fxcrd_CURRENT_NAMESPACE=""
+
+@macro function
+  local __fxcrd_function_name="$1"
+  
+  @code
+    ${__fxcrd_CURRENT_NAMESPACE}_${__fxcrd_function_name}() {
+      $(cat)
+    }
+
+    local $__fxcrd_function_name=${__fxcrd_CURRENT_NAMESPACE}_${__fxcrd_function_name}
+  @end
+@end
+
+@macro variable
+  local name="$1"
+  local value="$2"
+  @code
+    export "$__fxcrd_CURRENT_NAMESPACE_$name"="$value"
+    $name="$__fxcrd_CURRENT_NAMESPACE_$name"
+  @end
+@end
+
+@macro namespace
+  local __fxcrd_CURRENT_NAMESPACE="__fxcrd_NAMESPACE_$( </dev/urandom tr -dc 'a-zA-Z0-9' | head -c 32 )"
+
+  @code
+    $__fxcrd_CURRENT_NAMESPACE() {
+      $(__fxcrd_expand_macros)
+    }
+    $__fxcrd_CURRENT_NAMESPACE "\$@"
+  @end
+@end
+

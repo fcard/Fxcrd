@@ -1,0 +1,30 @@
+#!/bin/sh
+
+__fxcrd_COMPILED_PATH="$__fxcrd_PATH/compiled"
+__fxcrd_DEPENDS_PATH="$__fxcrd_PATH/depends"
+__fxcrd_INCLUDED="File List"
+
+__fxcrd_source() {
+  local fpath=""
+  local compiled=""
+  local depends=""
+
+  for file in "$@"; do
+    fpath="$(echo "$file" | sed -e 's/\//%%/g')"
+    compiled="$__fxcrd_COMPILED_PATH/$fpath"
+    depends="$__fxcrd_DEPENDS_PATH/$fpath"
+
+
+    if ! echo "$__fxcrd_INCLUDED" | grep -q "$file"; then
+      __fxcrd_INCLUDED="$(printf "%s\n%s\n" "$__fxcrd_INCLUDED" "$file")"
+
+      if [ ! -f "$compiled" ] || [ "$file" -nt "$compiled" ]; then
+        <$file __fxcrd_expand_macros > "$compiled"
+      fi
+      . "$compiled"
+    fi
+  done
+}
+
+__fxcrd_macro 'source' -i 'echo __fxcrd_source $@'
+

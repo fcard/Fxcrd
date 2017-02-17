@@ -1,0 +1,14 @@
+#!/bin/sh
+
+if [ -z "$__fxcrd_INIT" ]; then
+
+__fxcrd_PATH="$(fxcrd_path)"
+
+. "$__fxcrd_PATH/macros"
+. "$__fxcrd_PATH/source"
+
+__fxcrd_source $__fxcrd_PATH/include/*
+
+__fxcrd_INIT=true
+
+fi
