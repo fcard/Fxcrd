@@ -1,0 +1,215 @@
+#!/bin/sh
+
+export __fxcrd_NL="
+"
+export __fxcrd_IFS="$__fxcrd_NL"
+
+export __fxcrd_MACROS="Macro List"
+
+__fxcrd_INDENTATION=2
+
+__fxcrd_macro() {
+  local name="$1"
+  local data="@$name:"
+  shift
+
+  local OPTIND=1
+  while getopts "f:i:em" arg; do
+    case "$arg" in
+      i)
+        eval "__fxcrd_MACROFUNC_INLINE_$name() {
+          $OPTARG
+        }"
+        data="$data fxcrd_dt:i=__fxcrd_MACROFUNC_INLINE_$name;"
+        ;;
+      f)
+        data="$data fxcrd_dt:f=$OPTARG;"
+        ;;
+      e|m)
+        data="$data fxcrd_dt:$arg;"
+        ;;
+    esac
+  done
+  if echo "$__fxcrd_MACROS" | grep -qE "@$name:"; then
+    __fxcrd_MACROS="$(echo $__fxcrd_MACROS | sed -e "s/@$name:.*/$data/")"
+  else
+    __fxcrd_MACROS="$(printf "%s\n  %s\n" "$__fxcrd_MACROS" "$data")"
+  fi
+}
+
+__fxcrd_macro_info() {
+  local name="$1"
+  local macro="$2"
+
+  local data="$(echo "$__fxcrd_MACROS" | grep -oE "$macro:.*")"
+
+  if [ -n "$data" ]; then
+    local func="$(echo "$data" | sed -n -e 's/.* fxcrd_dt:f=\([^ ]\+\)\;.*/\1/p')"
+    local inln="$(echo "$data" | sed -n -e 's/.* fxcrd_dt:i=\([^ ]\+\);.*/\1/p')"
+    local eval="$(echo "$data" | sed -n -e 's/.* fxcrd_dt:e;.*/e/p')"
+    local meta="$(echo "$data" | sed -n -e 's/.* fxcrd_dt:m;.*/m/p')"
+  
+    local transform=""
+
+    { [ -n "$func" ] && transform="$func"; } ||
+    { [ -n "$inln" ] && transform="$inln"; }
+
+    __fxcrd_assoc "$name"    \
+      "transform:$transform" \
+      "eval:$eval"           \
+      "meta:$meta"           \
+      "found:true"
+  else
+    __fxcrd_assoc "$name" "found:false"
+  fi
+}
+
+__fxcrd_possible_macro() {
+  echo "$1" | grep -qE "@[a-zA-Z]"
+}
+
+__fxcrd_macro_end() {
+  echo "$1" | grep -q "@end"
+}
+
+__fxcrd_get_whitespace() {
+  echo "$1" | sed -e "s/^(\s+)[^\s].*/\1"
+}
+
+__fxcrd_remove_indentation() {
+  local wsn_min="$(echo "$2" | wc -c)"
+  local wsn_max="$(($wsn_min+$__fxcrd_INDENTATION))"
+  echo "$1" | sed -e "s/^[ ]\{$wsn_min,$wsn_max\}//"
+}
+
+__fxcrd_macro_failure() {
+  local name="$1"
+  local msg="$2"
+
+  echo "#macro failure ($name), $msg."
+}
+
+__fxcrd_expand_macros() {
+  [ -n "$ZSH_VERSION" ] && setopt local_options shwordsplit
+
+  local line="--"
+  local transformed=1
+  local endwhitespace=""
+  local IFS=""
+  local NL="$__fxcrd_NL"
+
+  local macro=""
+  local l_macro=""
+
+  while read -r line; do
+    if __fxcrd_possible_macro "$line"; then
+      __fxcrd_analyze_assoc macro "$line"
+
+      if $($macro is_macro) && [ ! "$($macro name)" = "@end" ]; then
+        local post_macro=""
+
+        if [ "$($macro input)" = '@@' ]; then
+          local macro_input=""
+          local valid_input=true
+          local nested_macros=1
+
+          while [ "$nested_macros" -gt 0 ]; do
+            if read -r line; then
+              valid_input=true
+              if __fxcrd_possible_macro "$line"; then
+                __fxcrd_analyze_assoc l_macro "$line"
+                
+                if $($l_macro is_macro); then
+                  if [ "$($l_macro name)" = "@end" ]; then
+                    if [ ! "$($l_macro args)" = "--" ] || [ ! "$($l_macro input)" = "@@" ]; then
+                      __fxcrd_macro_failure "$($macro name)" "other input alongside @end $($l_macro args)$($l_macro input)"
+                      return 1
+                    fi
+                    endwhitespace="$($l_macro pre)"
+                    nested_macros="$((nested_macros - 1))"
+                    [ "$nested_macros" -eq 0 ] && valid_input=false
+                  else
+                    nested_macros="$((nested_macros + 1))"
+                  fi
+                fi
+
+
+                if $valid_input; then
+                  macro_input="$macro_input$NL$line"
+                else
+                  macro_input="$macro_input$NL"
+                fi
+              else
+                macro_input="$macro_input$NL$line"
+              fi
+            else
+              __fxcrd_macro_failure "$($macro name)" "EOF reached when looking for macro @end"
+              return 1
+            fi
+          done
+          macro_input="$(__fxcrd_remove_indentation "$macro_input" "$endwhitespace" | tail -n+2)"
+        else
+          macro_input="$($macro input)"
+        fi
+
+        local info=""
+        __fxcrd_macro_info info "$($macro name)"
+
+        if ! $($info found); then
+          __fxcrd_macro_failure "$($macro name)" "the macro doesn't exist"
+        elif [ -z "$($info transform)" ]; then
+          __fxcrd_macro_failure "$($macro name)" "no transformation method (-f / -i missing)."
+        else
+          local __fxcrd_WHITESPACE="$((${#endwhitespace}-1))"
+
+          if [ -n "$($info eval))" ]; then
+            macro_args="$(echo "$($macro args)" | while read -r arg; do eval "echo \"$arg\""; done)"
+          else
+            macro_args="$($macro args)"
+          fi
+
+          IFS="$__fxcrd_IFS"
+          local macro_result="$($macro pre)$(echo "$macro_input" | $($info transform) $macro_args)"
+          IFS=""
+          while macro_result="$(echo "$macro_result" |  __fxcrd_expand_macros)"; do true; done
+
+          if [ -n "$($info meta)" ]; then
+            eval "$macro_result"
+          else
+            echo "$macro_result"
+          fi
+          transformed=0
+        fi
+      else
+        echo "$line"
+      fi
+    else
+      echo "$line"
+    fi
+  done
+  return $transformed
+}
+
+__fxcrd_macro_maker() {
+  local __fxcrd_name="$1"
+  shift
+
+  echo "
+    __fxcrd_MACROFUNC_$__fxcrd_name() {
+      $(cat)
+    }
+    __fxcrd_macro $__fxcrd_name $@ -f __fxcrd_MACROFUNC_$__fxcrd_name
+  "
+}
+__fxcrd_macro 'macro' -m -f "__fxcrd_macro_maker"
+
+__fxcrd_code() {
+  if [ "$1" = "-s" ]; then
+    echo "echo '$(cat)'"
+  else
+    echo "echo \"$(cat)\""
+  fi
+}
+
+__fxcrd_macro 'code' -f "__fxcrd_code"
+

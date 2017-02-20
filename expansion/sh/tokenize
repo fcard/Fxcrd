@@ -1,0 +1,153 @@
+#!/bin/sh
+
+__fxcrd_tokenize() {
+  local c='-'
+  local ind=0
+  local l_ind=0
+  local token=''
+  local escape=false
+  local type=normal
+  local tokenized=false
+
+  while [ -n "$c" ]; do
+    while [ -n "$c" ] && [ "$tokenized" = false ]; do
+      c=$(head -c 1)
+      ind=$(($ind+1))
+
+      if [ "$c" = '#' ] && [ ! "$type" = 'single_quotes' ] && [ ! "$type" = 'single_quotes' ]; then
+        c=''
+        tokenized=true
+
+      elif $escape; then
+        token="$token$c"
+        escape=false
+
+      elif [ "$c" = '\' ] && [ ! "$type" = single_quotes ]; then
+        escape=true
+
+      elif [ "$c" = "'" ]; then
+        case $type in
+          normal)        type=single_quotes ;;
+          double_quotes) token="$token$c"   ;;
+          *)             tokenized=true     ;;
+        esac
+
+      elif [ "$c" = '"' ]; then
+        case $type in
+          normal)        type=double_quotes ;;
+          single_quotes) token="$token$c"   ;;
+          *)             tokenized=true     ;;
+        esac
+
+      elif [ "$c" = ' ' ] && [ "$type" = normal ]; then
+        tokenized=true
+
+      elif [ "$c" = '@' ] && [ "$token" = '' ]; then
+        token='@'
+        type=macro
+      
+      elif [ "$type" = macro ]; then
+        if [ "$token" = '@' ]; then
+          case $c in
+            [a-zA-Z]) token="@$c" ;;
+            @)        type='macromma' token="@@"; tokenized=true ;;
+            *)        type=normal; tokenized=$c  ;;
+          esac
+        else
+          case $c in
+            [a-zA-Z_0-9]) token="$token$c" ;;            
+            *)            tokenized=$c     ;;
+          esac
+        fi
+      
+      else
+        token="$token$c"
+      fi
+    done
+
+    if [ -n "$token" ]; then
+      echo "$l_ind"
+      echo "$type"
+      echo "$token"
+    fi
+
+    case $tokenized in
+      true|false) l_ind=$ind;        token='';  type=normal ;;
+      '"')        l_ind=$ind;        token='';  type=double_quotes ;;
+      "'")        l_ind=$ind;        token='';  type=single_quotes ;;
+      ' ')        l_ind=$ind;        token='';  type=normal ;;
+      *)          l_ind=$(($ind+1)); token=$c;  type=normal ;;
+    esac
+    tokenized=false
+  done
+  printf "END\nEND\nEND\n"
+}
+
+__fxcrd_analyze_line() {
+  local name="$1"
+  local line="$2"
+
+  local type=""
+  local token=""
+  local state="premacro"
+  local index=0
+  local macromma_index=0
+
+  local ismacro=false
+  local premacro=""
+  local macro=""
+  local macro_args="--"
+  local macro_input=""
+
+  local NL="$__fxcrd_NL"
+
+  local tokens="$(__fxcrd_tmp)"
+  echo "$line" | __fxcrd_tokenize > "$tokens"
+  
+  while [ ! "$type" = END ]; do
+    read -r index
+    read -r type
+    read -r token
+
+    case $state in
+      premacro)
+        if [ "$type" = macro ]; then
+          state=macro_args
+          ismacro=true
+          premacro="$(echo "$line" | head -c $index)"
+          macro="$token"
+        fi
+      ;;
+      macro_args)
+        case $type in
+          normal)        macro_args="$macro_args$NL$token" ;;
+          single_quotes) macro_args="$macro_args$NL'$token'" ;;
+          double_quotes) macro_args="$macro_args$NL\"$token\"" ;;
+          macromma)      state=macro_input; macromma_index=$index ;;
+          END)           state=END; macro_input="@@" ;;
+          *)             ismacro=false; state=END ;;
+        esac
+      ;;
+      macro_input)
+        macro_input="$(echo "$line" | tail -c +$((macromma_index+3)))"
+        state=END
+      ;;
+      END)
+      ;;
+    esac
+  done < "$tokens"
+
+  macro_args="${macro_args#--$NL}"
+
+  __fxcrd_assoc "$name"  \
+    "is_macro:$ismacro"  \
+    "pre:$premacro"      \
+    "name:$macro"        \
+    "args:$macro_args"   \
+    "input:$macro_input"
+}
+
+__fxcrd_analyze_assoc() {
+  __fxcrd_analyze_line __fxcrd_assoc_macro_name "$2"
+  eval "$1=$__fxcrd_assoc_macro_name"
+}

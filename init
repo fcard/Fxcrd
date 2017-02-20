@@ -2,9 +2,17 @@
 
 if [ -z "$__fxcrd_INIT" ]; then
 
-__fxcrd_PATH="$(fxcrd_path)"
+__fxcrd_PATH="$(fxcrd_path)" || {
+  echo "Please install fxcrd before running this script !!"
+  exit 1
+}
 
-. "$__fxcrd_PATH/macros"
+if [ -z "$__fxcrd_EXPANSION_TOOL"]; then
+  . "$__fxcrd_PATH/expansion/sh/helper"
+  . "$__fxcrd_PATH/expansion/sh/tokenize"
+  . "$__fxcrd_PATH/expansion/sh/macros"
+fi
+
 . "$__fxcrd_PATH/source"
 
 __fxcrd_source $__fxcrd_PATH/include/*

@@ -1,0 +1,47 @@
+#!/bin/sh
+
+__fxcrd_TEMPDIR="$(mktemp -d --suffix=.fxcrd)"
+trap "rm -r $__fxcrd_TEMPDIR" EXIT
+
+__fxcrd_NL="
+"
+
+__fxcrd_IFS="$__fxcrd_NL"
+
+__fxcrd_random_name() {
+  echo "${1}_$(mktemp -u | tr -c '[:alnum:]' _)"
+}
+
+__fxcrd_assoc() {
+  local name="$1"
+  local fname="$(__fxcrd_random_name "assoc_$name")"
+  local pat="\s*\([^:]*\):\(.*\)"
+  local cases=""
+  local NL="$__fxcrd_NL"
+
+  shift
+  for keyval in "$@"; do
+    local key="${keyval%%:*}"
+    local val="${keyval#*:}"
+    cases="$cases$NL$key) echo '$val' ;;"
+  done
+  eval "
+  $fname() {
+    case \$1 in
+      $cases
+    esac
+  }"
+  eval "$name=$fname"
+}
+
+__fxcrd_pipe() {
+  local pipe="$(TMPDIR=$__fxcrd_TEMPDIR mktemp --suffix=.fxcrd.pipe -u)"
+  mkfifo $pipe
+
+  echo "$pipe"
+}
+
+__fxcrd_tmp() {
+  TMPDIR=$__fxcrd_TEMPDIR mktemp --suffix=.fxcrd.file
+}
+

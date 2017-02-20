@@ -1,0 +1,7 @@
+#!/bin/sh
+. "$(fxcrd_path)/tokenize"
+
+__fxcrd_tokenize $1
+while true; do
+  : nothing 
+done
