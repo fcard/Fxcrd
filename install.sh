@@ -98,7 +98,9 @@ while ! $ManagedToPick; do
             SuccessLinking=false
           ln -s "$Here/expansion/julia/bin/fxcrd_i" "$InstallDir/fxcrd_i" ||
             SuccessLinking=false
-
+          ln -s "$Here/tools/fxcrd_compile" "$InstallDir/fxcrd_compile" ||
+            SuccessLinking=false
+            
           if ! $SuccessLinking; then
             echo "Huh?? Did something happen? (y/n)"
             Answer=""
