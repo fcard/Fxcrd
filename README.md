@@ -42,7 +42,7 @@ $ $(fxcrd_path)/compile "/path/to/file"
 I don't remember how you do that with the `sh` backend I will edit this in later.
 Compiled files will be put in the `compiled` directory and will be loaded automatically.
 
-# The code files an their macros
+# The code files and their macros
 
 Code files are just shell scripts but you can do
 ```
@@ -178,7 +178,7 @@ Oh yeah, `fxcrd_i` starts an interactive session: (needs julia)
 [fabio:...ripts/ShellExtensions/fxcrd]$ echo I was in a better mood when I made it      (master) 
 I was in a better mood when I made it
 ```
-There was also a thing where if you had the julia backend you use you could create macros with julia code
+There was also a thing where if you had the julia backend you could create macros with julia code
 ```
 @macro jlm -j
   println("echo 10")
