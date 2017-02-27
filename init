@@ -2,10 +2,12 @@
 
 if [ -z "$__fxcrd_INIT" ]; then
 
-__fxcrd_PATH="$(fxcrd_path)" || {
+if [ -z "$(command -v fxcrd_path)" ]; then
   echo "Please install fxcrd before running this script !!"
   exit 1
-}
+fi
+
+__fxcrd_PATH="$(fxcrd_path)"
 
 if [ -z "$(command -v "fxcrd_source")" ]; then
   . "$__fxcrd_PATH/expansion/sh_fallback/helper"
