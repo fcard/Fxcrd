@@ -1,0 +1,163 @@
+#!/bin/sh
+
+__fxcrd_DEFAULT_CMD="fxcrd_source"
+
+__fxcrd_check_arguments() {
+  if [ "$1" = 0 ] && [ ! "$2" = "$__fxcrd_DEFAULT_CMD" ] && ! "$3"; then
+    echo "please specify files to be compiled by fxcrd" 
+    exit 1
+  fi
+}
+
+__fxcrd_check_cmd() {
+  if [ -z "$1" ]; then
+    echo "please specify a command to be used by fxcrd compilation" > /dev/stderr
+    exit 1
+  elif [ ! -x "$(command -v "$1")" ]; then
+    echo "command '$1' not found when trying to use it for fxcrd compilation." > /dev/stderr
+    exit 1
+  elif [ ! "$cmd" = "$__fxcrd_DEFAULT_CMD" ] && $2; then
+    echo "--command argument ignored! --send used..." > /dev/stderr
+  fi
+}
+
+__print_fxcrd_compile_help() {
+
+  cat <<'EOH'
+fxcrd_compile OPTIONS FILES
+
+  communicates with a 'fxcrd_source' command to expand macros and
+  output their result.
+
+OPTIONS
+  ( --help    | -h )           | display this message and exit.
+  ( --command | -c ) COMMAND   | use COMMAND as the fxcrd_source operation
+  ( --print   | -p )           | print interactions (useful for debugging)
+  ( --send    | -s )           | send pipes instead of launching a program
+
+FXCRD SIGNALS
+  The following signals will used to communicate between fxcrd_compile and
+  fxcrd_source.
+
+  $${$fxcrd_eval$}$$ if received by fxcrd_compile, will
+                     evaluate the previously sent code and
+                     clear that input.
+
+  $${$fxcrd_read$}$$ if received by fxcrd_compile, will
+                     evaluate the previously sent code,
+                     the it will send the result of the
+                     evaluation to fxcrd_source, ending
+                     with $${$fxcrd_return$}$$.
+ 
+  $${$fxcrd_end$}$$  if received by fxcrd_compile, the
+                     communication will end and the
+                     program will close.
+
+EOH
+}
+
+fxcrd_compile() (
+  __fxcrd_check_arguments "$#"
+ 
+  local IFS=""
+  local tmpdir="$(mktemp -d --suffix .fxcrd.tmpdir)"
+  local eval_io="$(TMPDIR="$tmpdir" mktemp -u --suffix .eval_io.fxcrd.pipe)"
+  local read_io="$(TMPDIR="$tmpdir" mktemp -u --suffix .read_io.fxcrd.pipe)"
+  local errr_io="$(TMPDIR="$tmpdir" mktemp -u --suffix .errr_io.fxcrd.file)"
+  local resl_io="$(TMPDIR="$tmpdir" mktemp -u --suffix .resl_io.fxcrd.file)"
+ 
+  trap "{
+    [ -d '$tmpdir' ] && rm -r '$tmpdir'
+    exit 0
+  }" TERM INT EXIT HUP
+
+  local log=false
+  local cmd="$__fxcrd_DEFAULT_CMD"
+  local snd=false
+  local pip=""
+
+
+  local has_arguments=true
+  while $has_arguments; do
+    case "$1" in
+      '--logjl'|'-l')   logjl=true; shift 1;;
+      '--print'|'-p')   log=true; shift 1 ;;
+      '--command'|'-c') cmd="$2"; shift 2 ;;
+      '--help'|'-h')    __print_fxcrd_compile_help; exit 1 ;;
+      '--send'|'-s')    snd=true; shift ;; 
+      '--')             has_arguments=false; shift 1 ;;
+      '-'*)             "invalid option '$1'"; exit 1 ;;
+      *)                has_arguments=false ;;
+    esac
+  done
+  __fxcrd_check_arguments "$#" "$cmd" "$snd"
+  __fxcrd_check_cmd "$cmd" "$snd"
+
+  mkfifo "$eval_io"
+  mkfifo "$read_io"
+  echo "" > "$errr_io"
+  echo "" > "$resl_io"
+
+  exec 4<>"$eval_io"
+  exec 5<>"$read_io"
+
+  local finished=false
+
+  local NL="$(printf "\n")"
+  local CMDCUM=""
+
+  if $snd; then
+    echo "$eval_io"
+    echo "$read_io"
+  else
+    "$cmd" "$eval_io" "$read_io" "$@" 1>/dev/null 2> "$errr_io" &
+  fi
+
+  while ! $finished; do
+    read -r cmd
+    if $log; then
+      if [ "$(echo "$cmd" | head -c 4)"  = '$${$' ]; then
+        echo "\033[32;1m-- $cmd\033[0m"
+      else
+        echo "\033[36;1m>> $cmd\033[0m"
+      fi
+    fi
+    case "$cmd" in
+      '$${$fxcrd_eval$}$$')
+        eval "$CMDCUM"
+        CMDCUM=""
+      ;;
+
+      '$${$fxcrd_read$}$$')
+
+        if $log; then
+          eval "$CMDCUM" > "$resl_io"
+          local result="$(cat "$resl_io")"
+
+          echo "$result" > "$read_io"
+          echo "$result" | while IFS="" read -r line; do
+            echo "\033[035;1m>>  $line"
+          done
+          echo "\033[033;1m-- "'$${$fxcrd_return$}$$\033[0m'
+        else
+          eval "$CMDCUM" > "$read_io"
+        fi
+        CMDCUM=""
+        echo '$${$fxcrd_return$}$$' > "$read_io"
+      ;;
+
+      '$${$fxcrd_end$}$$') finished=true ;;
+
+      '$${$fxcrd_error$}$$') wait; $log && echo "\033[31;1m$(cat "$errr_io")\033[0m" ;;
+
+      *) CMDCUM="$(printf "%s\n%s" "$CMDCUM" "$cmd")" ;;
+    esac
+  done < "$eval_io"
+  
+  exec 4<&-
+  exec 5<&-
+
+  exit 0
+)
+
+

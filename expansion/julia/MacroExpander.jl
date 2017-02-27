@@ -1,7 +1,10 @@
 module MacroExpander
 using  ..Fxcrd.MacroDatabase
 using  ..Fxcrd.Tokenize
-export MacroCall, compile_io, compile_str
+using  ..Fxcrd.ShellInterop
+export MacroCall, analyze_line, compile_io, compile_str,
+       ismacro, isend, ismultiline,
+       nameof, preof, argsof, inputof
 
 mutable struct MacroCall
   name::String
@@ -33,12 +36,13 @@ function compile_lines(lines)
   i = 1
   output = String[]
   gotmacro = false
+  evaluate = false
 
   while i <= length(lines)
     m, i = read_macrocall(lines, i)
     if ismacro(m)
       ex = expand_macro(m)
-      !isempty(ex) && push!(output, ex)
+      !isempty(ex) && append!(output, split(ex,"\n"))
       gotmacro = true
     else
       push!(output, lines[i])
@@ -46,27 +50,29 @@ function compile_lines(lines)
     end
   end
 
-  outstr = join(output, "\n")
   if gotmacro
-    outstr = compile_str(outstr)
+    outstr = compile_lines(output)
+  else
+    outstr = join(output, "\n")
   end
   return outstr
 end
 
 function expand_macro(mcall)
-  @assert haskey(MacroDatabase.Macros, mcall.name) "macro $(mcall.name) not defined"
   m = get_macro(mcall.name)
-  return m.func(mcall.args...,input=mcall.input)
+  return macrocall(m, mcall.args..., input=mcall.input)
 end
 
 function read_macrocall(lines, i)
   m = analyze_line(lines[i])
   if ismacro(m)
     if ismultiline(m)
+      indent=""
       minput = String[]
       nested = 1
+      ml = nothing
       while nested > 0
-        @assert i < length(lines) "closing @end not found after multiline macro call"
+        @assert i < length(lines) "closing @end not found after multiline macro call ($m, $ml)"
         i += 1
         line = lines[i]
         ml = analyze_line(line)
@@ -79,18 +85,30 @@ function read_macrocall(lines, i)
           @assert argsof(ml) == [] && inputof(ml) == "" "other code alongside @end is not allowed"
           nested -= 1
           nested == 0 || push!(minput, line)
+          nested == 0 && (indent = " "^(findfirst(line, '@')-1))
         else
           push!(minput, line)
         end
       end
-      m.input = join(minput,"\n")
+      m.input = join(map(ln->remove_indent(indent,ln), minput),"\n")
     end
     i += 1
   end
-
   return m, i
 end
 
+function remove_indent(indent, line)
+  if startswith(line, indent)
+    indent != "" && (line = line[length(indent):end])
+    if startswith(line, "  ")
+      return line[3:end]
+    else
+      return line
+    end
+  else
+    return line
+  end
+end
 
 function analyze_line(line)
   tokens = tokenize(line)

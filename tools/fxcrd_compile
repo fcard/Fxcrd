@@ -1,0 +1,6 @@
+#!/bin/sh
+
+. $(fxcrd_path)/compile
+fxcrd_compile "$@"
+
+exit 0

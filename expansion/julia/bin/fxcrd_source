@@ -1,0 +1,9 @@
+#!/usr/bin/env julia
+if length(ARGS) >= 1 && ARGS[1] == "--color"
+  @eval Base have_color = true
+  ARGS = ARGS[2:end]
+end
+
+using Fxcrd
+Fxcrd.main(ARGS...)
+

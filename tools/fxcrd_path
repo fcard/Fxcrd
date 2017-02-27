@@ -1,7 +1,16 @@
 #!/bin/sh
 
+Location="$(
 if [ "$(readlink -m "$0")" = "$(readlink -m "$(command -v "fxcrd_path")")" ]; then
   echo "$(readlink -m "$(dirname "$(readlink -m "$0")")/..")"
 else
   fxcrd_path
+fi
+)"
+
+if [ -z "$1" ]; then
+  echo "$Location"
+else
+  case "$1" in
+  esac
 fi

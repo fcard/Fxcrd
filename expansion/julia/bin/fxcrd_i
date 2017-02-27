@@ -1,0 +1,7 @@
+#!/usr/bin/env julia
+
+@eval Base have_color = true
+
+using Fxcrd
+Fxcrd.interactive(ARGS...)
+

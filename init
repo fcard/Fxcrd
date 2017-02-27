@@ -7,16 +7,31 @@ __fxcrd_PATH="$(fxcrd_path)" || {
   exit 1
 }
 
-if [ -z "$__fxcrd_EXPANSION_TOOL"]; then
-  . "$__fxcrd_PATH/expansion/sh/helper"
-  . "$__fxcrd_PATH/expansion/sh/tokenize"
-  . "$__fxcrd_PATH/expansion/sh/macros"
+if [ -z "$(command -v "fxcrd_source")" ]; then
+  . "$__fxcrd_PATH/expansion/sh_fallback/helper"
+  . "$__fxcrd_PATH/expansion/sh_fallback/tokenize"
+  . "$__fxcrd_PATH/expansion/sh_fallback/macros"
+  . "$__fxcrd_PATH/expansion/sh_fallback/compile"
+  
+  fxcrd_compile() { 
+    while echo "$1" | grep -qE "^--"; do
+      shift
+    done
+    __fxcrd_compile $@ 
+  }
+else
+  . "$__fxcrd_PATH/compile"
 fi
-
 . "$__fxcrd_PATH/source"
 
-__fxcrd_source $__fxcrd_PATH/include/*
+fxcrd_include
 
-__fxcrd_INIT=true
+__fxcrd_dev() {
+  gfxc() {
+    cd "$(fxcrd_path)"
+  }
+}
+
+export __fxcrd_INIT=true
 
 fi
