@@ -1,5 +1,7 @@
 # Fxcrd
 
+This lets you write macros in shell scripts
+
 I was sick and bored and I don't care god
 
 It took me three days to realize that the name was just my username with a x in it minus a letter.
