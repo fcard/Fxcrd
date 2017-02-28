@@ -34,13 +34,12 @@ Next time I get a cold I will probably add more backends.
 
 # Compiling
 
-Put your code files in the `include` directory and they will be compiled next time you open your shell.
-If you installed the julia backend you can also do:
+Put your code files in the `$(fxcrd_path)/include` directory and they will be compiled next time you open your shell.
+Or you can also do:
 ```
-$ $(fxcrd_path)/compile "/path/to/file"
+$ fxcrd_compile "/path/to/file"
 ```
-I don't remember how you do that with the `sh` backend I will edit this in later.
-Compiled files will be put in the `compiled` directory and will be loaded automatically.
+Compiled files will be put in the `$(fxcrd_path)/compiled` directory and will be loaded automatically.
 
 # The code files and their macros
 
