@@ -56,7 +56,7 @@ Macros["@macro"] = Macro("@macro", macro_maker, false, true)
 function heredoc_dlm(name)
   replace(String(gensym("fxcrd_sh_julia_$name")), "#", "%")
 end
-  
+
 
 function echo_code(ARGS...; input="")
   dlm = heredoc_dlm("code")
@@ -90,7 +90,7 @@ function parse_shellfunc(name, f_input)
   expanded_input = compile_str(f_input)
   out = ShellCompiler.convert_to_julia(expanded_input)
   if out == nothing
-    shell() do sh 
+    shell() do sh
       eval_sh(sh, "__fxcrd_MACROFUNC_$name(){\n$expanded_input\n}")
     end
     shellfunc("__fxcrd_MACROFUNC_$name")
@@ -103,7 +103,7 @@ function shellfunc(name)
   function f(ARGS...; input="")::String
     dlm=heredoc_dlm("function")
     heredoc="<<'$dlm'\n$input\n$dlm"
-   
+
     shell() do sh
       read_sh(sh, "$name $(ARGS...) $heredoc")
     end

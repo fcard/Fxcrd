@@ -31,7 +31,7 @@ function macrocall(m::Macro, args::String...; input::String="")::String
       res = read_sh(sh, res)
     end
   end
-  
+
   return res
 end
 

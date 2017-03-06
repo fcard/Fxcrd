@@ -1,9 +1,9 @@
 module ShellInterop
-export shell, configure_shell, 
-       eval_sh, read_sh, end_sh, 
+export shell, configure_shell,
+       eval_sh, read_sh, end_sh,
        incomplete_msg_sh, err_sh, eval_file_sh,
        FXCRD_PATH
-       
+
 const FXCRD_PATH = chomp(readstring(`fxcrd_path`))
 
 struct Shell{EvalIO<:IO,ReadIO<:IO}
@@ -50,7 +50,7 @@ end
 function read_sh(sh, cmd)
   println(sh.eval, cmd)
   sh_send_fxcrd_signal(sh, "read")
-  
+
   line=""
   result=""
   while line != sh_fxcrd_signal("return")

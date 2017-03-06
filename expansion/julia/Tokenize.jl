@@ -118,8 +118,8 @@ function tokenize(line; incomplete=:notreally)
       push_token(c)
       build()
     elseif c == '"'
-      istype(:single_quotes) ? push_token(c) : 
-      istype(:double_quotes) ? build(true)   :     
+      istype(:single_quotes) ? push_token(c) :
+      istype(:double_quotes) ? build(true)   :
       (build(); newtype(:double_quotes); isincomplete())
     elseif c == '\''
       istype(:double_quotes) ? push_token(c) :

@@ -4,7 +4,7 @@ __fxcrd_DEFAULT_CMD="fxcrd_source"
 
 __fxcrd_check_arguments() {
   if [ "$1" = 0 ] && [ ! "$2" = "$__fxcrd_DEFAULT_CMD" ] && ! "$3"; then
-    echo "please specify files to be compiled by fxcrd" 
+    echo "please specify files to be compiled by fxcrd"
     exit 1
   fi
 }
@@ -48,7 +48,7 @@ FXCRD SIGNALS
                      the it will send the result of the
                      evaluation to fxcrd_source, ending
                      with $${$fxcrd_return$}$$.
- 
+
   $${$fxcrd_end$}$$  if received by fxcrd_compile, the
                      communication will end and the
                      program will close.
@@ -58,14 +58,14 @@ EOH
 
 fxcrd_compile() (
   __fxcrd_check_arguments "$#"
- 
+
   local IFS=""
   local tmpdir="$(mktemp -d --suffix .fxcrd.tmpdir)"
   local eval_io="$(TMPDIR="$tmpdir" mktemp -u --suffix .eval_io.fxcrd.pipe)"
   local read_io="$(TMPDIR="$tmpdir" mktemp -u --suffix .read_io.fxcrd.pipe)"
   local errr_io="$(TMPDIR="$tmpdir" mktemp -u --suffix .errr_io.fxcrd.file)"
   local resl_io="$(TMPDIR="$tmpdir" mktemp -u --suffix .resl_io.fxcrd.file)"
- 
+
   trap "{
     [ -d '$tmpdir' ] && rm -r '$tmpdir'
     exit 0
@@ -84,7 +84,7 @@ fxcrd_compile() (
       '--print'|'-p')   log=true; shift 1 ;;
       '--command'|'-c') cmd="$2"; shift 2 ;;
       '--help'|'-h')    __print_fxcrd_compile_help; exit 1 ;;
-      '--send'|'-s')    snd=true; shift ;; 
+      '--send'|'-s')    snd=true; shift ;;
       '--')             has_arguments=false; shift 1 ;;
       '-'*)             "invalid option '$1'"; exit 1 ;;
       *)                has_arguments=false ;;
@@ -153,7 +153,7 @@ fxcrd_compile() (
       *) CMDCUM="$(printf "%s\n%s" "$CMDCUM" "$cmd")" ;;
     esac
   done < "$eval_io"
-  
+
   exec 4<&-
   exec 5<&-
 

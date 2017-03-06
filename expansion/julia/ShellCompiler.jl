@@ -4,7 +4,7 @@ module ShellCompiler
     CONVERT[] || return nothing
 
     top_tokens = TokenList(input)
-  
+
     exprs = Any[]
 
     function push_expr(ex)
@@ -86,7 +86,7 @@ module ShellCompiler
           token = name_substitution_parse(token, tokens, result, double_quoted)
         end
       end
-    end 
+    end
   end
 
   function name_substitution_parse(token, tokens, result, double_quoted)

@@ -45,7 +45,7 @@ __fxcrd_tokenize() {
       elif [ "$c" = '@' ] && [ "$token" = '' ]; then
         token='@'
         type=macro
-      
+
       elif [ "$type" = macro ]; then
         if [ "$token" = '@' ]; then
           case $c in
@@ -55,11 +55,11 @@ __fxcrd_tokenize() {
           esac
         else
           case $c in
-            [a-zA-Z_0-9]) token="$token$c" ;;            
+            [a-zA-Z_0-9]) token="$token$c" ;;
             *)            tokenized=$c     ;;
           esac
         fi
-      
+
       else
         token="$token$c"
       fi
@@ -103,7 +103,7 @@ __fxcrd_analyze_line() {
 
   local tokens="$(__fxcrd_tmp)"
   echo "$line" | __fxcrd_tokenize > "$tokens"
-  
+
   while [ ! "$type" = END ]; do
     read -r index
     read -r type

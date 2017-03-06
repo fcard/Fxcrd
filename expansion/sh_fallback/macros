@@ -48,7 +48,7 @@ __fxcrd_macro_info() {
     local inln="$(echo "$data" | sed -n -e 's/.* fxcrd_dt:i=\([^ ]\+\);.*/\1/p')"
     local eval="$(echo "$data" | sed -n -e 's/.* fxcrd_dt:e;.*/e/p')"
     local meta="$(echo "$data" | sed -n -e 's/.* fxcrd_dt:m;.*/m/p')"
-  
+
     local transform=""
 
     { [ -n "$func" ] && transform="$func"; } ||
@@ -118,7 +118,7 @@ __fxcrd_expand_macros() {
               valid_input=true
               if __fxcrd_possible_macro "$line"; then
                 __fxcrd_analyze_assoc l_macro "$line"
-                
+
                 if $($l_macro is_macro); then
                   if [ "$($l_macro name)" = "@end" ]; then
                     if [ ! "$($l_macro args)" = "--" ] || [ ! "$($l_macro input)" = "@@" ]; then

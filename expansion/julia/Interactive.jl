@@ -107,7 +107,7 @@ function process_input(input, config::InteractConfig, is::InputState)::String
   else
     ma = macro_analysis = analyze_line(input)
     print_extra_info(config, input, macro_analysis)
-   
+
     if ismacro(ma) && ismultiline(ma)
       is.nested_macros += 1
       is.found_macro = true
@@ -119,7 +119,7 @@ function process_input(input, config::InteractConfig, is::InputState)::String
        @with is.topmacro = false begin
          result = "$input\n$(next_line())"
        end
-       
+
        return is.topmacro ? compile_str(result) : result
     else
       if is.found_macro
@@ -136,7 +136,7 @@ function process_input(input, config::InteractConfig, is::InputState)::String
         elseif endswith(input, "\\")
           is.escaped_newline = true
           return "$input\n$(next_line())"
-        
+
         else
           check_balance(input, is)
           if is.incomplete_parens || is.incomplete_string
@@ -244,7 +244,7 @@ function exec_magic(input, config::InteractConfig)::String
     for (m,f) in Macros
       println("-- $m")
     end
-    
+
   elseif iscommand("stacktrace")
     display(config.stacktrace)
     println()
@@ -289,6 +289,6 @@ function print_extra_info(config,input,mm)
     pm("---------------")
   end
 end
-    
+
 
 end

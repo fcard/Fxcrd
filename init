@@ -14,12 +14,12 @@ if [ -z "$(command -v "fxcrd_source")" ]; then
   . "$__fxcrd_PATH/expansion/sh_fallback/tokenize"
   . "$__fxcrd_PATH/expansion/sh_fallback/macros"
   . "$__fxcrd_PATH/expansion/sh_fallback/compile"
-  
-  fxcrd_compile() { 
+
+  fxcrd_compile() {
     while echo "$1" | grep -qE "^--"; do
       shift
     done
-    __fxcrd_compile $@ 
+    __fxcrd_compile $@
   }
 else
   . "$__fxcrd_PATH/compile"

@@ -92,15 +92,15 @@ while ! $ManagedToPick; do
           echo "I need to install two other executables, where do you want"
           echo "they to go? type nothing and it will be '$InstallDir'"
           pick_directory
-          InstallDir="$FoundDir" 
+          InstallDir="$FoundDir"
           SuccessLinking=true
-          ln -s "$Here/expansion/julia/bin/fxcrd_source" "$InstallDir/fxcrd_source" || 
+          ln -s "$Here/expansion/julia/bin/fxcrd_source" "$InstallDir/fxcrd_source" ||
             SuccessLinking=false
           ln -s "$Here/expansion/julia/bin/fxcrd_i" "$InstallDir/fxcrd_i" ||
             SuccessLinking=false
           ln -s "$Here/tools/fxcrd_compile" "$InstallDir/fxcrd_compile" ||
             SuccessLinking=false
-            
+
           if ! $SuccessLinking; then
             echo "Huh?? Did something happen? (y/n)"
             Answer=""
