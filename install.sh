@@ -90,7 +90,7 @@ while ! $ManagedToPick; do
         if $(julia -E 'VERSION > v"0.6-dev"'); then
           echo "Seems like you're almost ready"
           echo "I need to install two other executables, where do you want"
-          echo "they to go? type nothing and it will be '$InstallDir'"
+          echo "them to go? type nothing and it will be '$InstallDir'"
           pick_directory
           InstallDir="$FoundDir"
           SuccessLinking=true
