@@ -79,7 +79,7 @@ end
 module ShellEnv end
 
 function parse_juliafunc(name,input)
-  ShellEnv.eval(parse("""
+  eval(ShellEnv, parse("""
     function $name(ARGS...; input="")
       $input
     end
